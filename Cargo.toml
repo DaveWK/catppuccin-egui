@@ -3,7 +3,7 @@ members = ["examples/todo"]
 
 [package]
 name = "catppuccin-egui"
-version = "5.7.0"
+version = "5.8.0"
 authors = ["Sam Nystrom <sam@samnystrom.dev>"]
 edition = "2021"
 description = "Soothing pastel theme for egui."
@@ -26,8 +26,8 @@ egui31 = { version = "0.31", package = "egui", default-features = false, optiona
 egui32 = { version = "0.32", package = "egui", default-features = false, optional = true }
 egui33 = { version = "0.33", package = "egui", default-features = false, optional = true }
 
-[dev-dependencies]
-eframe = "0.26"
+egui36 = { version = "0.36", package = "egui", default-features = false, optional = true }
+egui37 = { version = "0.37", package = "egui", default-features = false, optional = true }
 
 [features]
 default = ["egui26"]

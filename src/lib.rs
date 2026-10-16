@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 //! Soothing pastel theme for [egui](egui).
 //!
 //! To use, call [`set_theme`](crate::set_theme) with the egui context
@@ -6,22 +7,16 @@
 //! # Example
 //!
 //! ```rust
-//! # use eframe::egui;
-//! struct App;
-//! impl eframe::App for App {
-//!     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-//!         catppuccin_egui::set_theme(ctx, catppuccin_egui::MACCHIATO);
-//!         egui::CentralPanel::default().show(&ctx, |ui| {
-//!             ui.label("Hello, world!");
-//!         });
-//!     }
-//! }
+//! use catppuccin_egui::{egui, MACCHIATO};
+//!
+//! let ctx = egui::Context::default();
+//! catppuccin_egui::set_theme(&ctx, MACCHIATO);
 //! ```
 //!
 //! You can also customize your own theme:
 //!
 //! ```rust
-//! # use eframe::egui;
+//! # use catppuccin_egui::egui;
 //! use catppuccin_egui::{Theme, MOCHA};
 //! const MY_MOCHA: Theme = Theme {
 //!     red: egui::Color32::from_rgb(255, 0, 0),
@@ -39,25 +34,31 @@
     feature = "egui31",
     feature = "egui32",
     feature = "egui33",
+    feature = "egui36",
+    feature = "egui37",
 )))]
 compile_error!("at least one egui version must be enabled");
 
 #[cfg(feature = "egui26")]
-use egui26 as egui;
+pub use egui26 as egui;
 #[cfg(feature = "egui27")]
-use egui27 as egui;
+pub use egui27 as egui;
 #[cfg(feature = "egui28")]
-use egui28 as egui;
+pub use egui28 as egui;
 #[cfg(feature = "egui29")]
-use egui29 as egui;
+pub use egui29 as egui;
 #[cfg(feature = "egui30")]
-use egui30 as egui;
+pub use egui30 as egui;
 #[cfg(feature = "egui31")]
-use egui31 as egui;
+pub use egui31 as egui;
 #[cfg(feature = "egui32")]
-use egui32 as egui;
+pub use egui32 as egui;
 #[cfg(feature = "egui33")]
-use egui33 as egui;
+pub use egui33 as egui;
+#[cfg(feature = "egui36")]
+pub use egui36 as egui;
+#[cfg(feature = "egui37")]
+pub use egui37 as egui;
 
 use egui::{epaint, style};
 
@@ -66,8 +67,19 @@ pub use themes::*;
 
 /// Apply the given theme to a [`Context`](egui::Context).
 pub fn set_theme(ctx: &egui::Context, theme: Theme) {
-    let old = ctx.style().visuals.clone();
-    ctx.set_visuals(theme.visuals(old));
+    #[cfg(any(feature = "egui36", feature = "egui37"))]
+    {
+        for mode in [egui::Theme::Light, egui::Theme::Dark] {
+            let mut style = ctx.style_of(mode).as_ref().clone();
+            set_style_theme(&mut style, theme);
+            ctx.set_style_of(mode, style);
+        }
+    }
+    #[cfg(not(any(feature = "egui36", feature = "egui37")))]
+    {
+        let old = ctx.style().visuals.clone();
+        ctx.set_visuals(theme.visuals(old));
+    }
 }
 
 /// Apply the given theme to a [`Style`](egui::Style).
@@ -75,13 +87,9 @@ pub fn set_theme(ctx: &egui::Context, theme: Theme) {
 /// # Example
 ///
 /// ```rust
-/// # use eframe::egui;
-/// # use egui::__run_test_ctx;
-/// # __run_test_ctx(|ctx| {
-/// let mut style = (*ctx.style()).clone();
-/// catppuccin_egui::set_style_theme(&mut style, catppuccin_egui::MACCHIATO);
-/// ctx.set_style(style);
-/// # });
+/// use catppuccin_egui::{egui, MACCHIATO};
+/// let mut style = egui::Style::default();
+/// catppuccin_egui::set_style_theme(&mut style, MACCHIATO);
 /// ```
 pub fn set_style_theme(style: &mut egui::Style, theme: Theme) {
     let old = style.visuals.clone();
@@ -154,6 +162,52 @@ impl Theme {
             },
             dark_mode: !is_latte,
             ..old
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn all_palettes_apply_their_actual_colours() {
+        for palette in [LATTE, FRAPPE, MACCHIATO, MOCHA] {
+            let mut style = egui::Style::default();
+            style.spacing.item_spacing = egui::vec2(13.0, 17.0);
+            set_style_theme(&mut style, palette);
+            assert_eq!(style.visuals.panel_fill, palette.base);
+            assert_eq!(style.visuals.widgets.hovered.bg_fill, palette.surface2);
+            assert_eq!(style.visuals.error_fg_color, palette.maroon);
+            assert_eq!(style.visuals.dark_mode, palette != LATTE);
+            assert_eq!(style.spacing.item_spacing, egui::vec2(13.0, 17.0));
+        }
+    }
+
+    #[test]
+    fn context_theme_preserves_nonvisual_settings() {
+        let ctx = egui::Context::default();
+        #[cfg(any(feature = "egui36", feature = "egui37"))]
+        for mode in [egui::Theme::Light, egui::Theme::Dark] {
+            let mut style = ctx.style_of(mode).as_ref().clone();
+            style.spacing.item_spacing = egui::vec2(19.0, 23.0);
+            ctx.set_style_of(mode, style);
+        }
+        #[cfg(not(any(feature = "egui36", feature = "egui37")))]
+        ctx.style_mut(|style| style.spacing.item_spacing = egui::vec2(19.0, 23.0));
+        set_theme(&ctx, LATTE);
+        #[cfg(any(feature = "egui36", feature = "egui37"))]
+        for mode in [egui::Theme::Light, egui::Theme::Dark] {
+            assert_eq!(ctx.style_of(mode).visuals.panel_fill, LATTE.base);
+            assert_eq!(
+                ctx.style_of(mode).spacing.item_spacing,
+                egui::vec2(19.0, 23.0)
+            );
+        }
+        #[cfg(not(any(feature = "egui36", feature = "egui37")))]
+        {
+            assert_eq!(ctx.style().visuals.panel_fill, LATTE.base);
+            assert_eq!(ctx.style().spacing.item_spacing, egui::vec2(19.0, 23.0));
         }
     }
 }

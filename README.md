@@ -21,6 +21,18 @@
 	<img src="https://raw.githubusercontent.com/catppuccin/egui/main/assets/previews/preview.webp"/>
 </p>
 
+## Status
+
+This public compatibility fork is version **5.8.0**, based on upstream 5.7.0.
+It adds `egui36` and `egui37` (latest stable egui 0.37), preserving the original
+`egui26` default and previous features. Select exactly one version feature.
+The fork is source-only: 5.8.0 is not published to crates.io. GitHub Actions
+remain disabled; checks run locally on Fedora with `make check`.
+Native palette tests, doctests, strict Clippy and WASM checks pass on egui
+0.36.2 and 0.37.0; the default 0.26.2 smoke also passes. Dependency policy
+checks pass for the latest selected feature.
+See [code standards](doc/CODE-STANDARDS.md) and [queue](doc/QUEUE.md).
+
 ## Previews
 
 <details>
@@ -50,7 +62,7 @@ Add the crate to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-catppuccin-egui = { version = "5.7.0", default-features = false, features = ["egui33"] }
+catppuccin-egui = { git = "https://github.com/DaveWK/catppuccin-egui", branch = "main", default-features = false, features = ["egui37"] }
 ```
 
 <!-- x-release-please-end -->
@@ -61,11 +73,14 @@ To use a theme, call the `set_theme` function with a theme and the egui context:
 catppuccin_egui::set_theme(&ctx, catppuccin_egui::MOCHA);
 ```
 
-To run the example app, run `cargo run -p todo`.
+The inherited todo example targets egui 0.32. The compatibility checks target
+the library directly; no renderer or bundled font is required.
 
 See the full documentation at https://docs.rs/catppuccin-egui.
 
-[Whiskers](https://github.com/catppuccin/toolbox/tree/main/whiskers) is required as a build-time development dependency.
+[Whiskers](https://github.com/catppuccin/toolbox/tree/main/whiskers) is optional
+when building a Git checkout. Without it, the checked-in palette is preserved.
+If generation is attempted and fails, the build fails without truncating the palette.
 
 ## 💝 Thanks to
 
